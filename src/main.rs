@@ -36,7 +36,7 @@ struct PostRequestTest {
 #[derive(Serialize, Deserialize, Debug)]
 struct PostResponseTest {
     pub matches: HashMap<u8,HashMap<u8,HashMap<u8,HashMap<u8,u64>>>>,
-//    pub summary: String,
+    pub summary: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -152,7 +152,10 @@ fn post_test_handler(mut state: State) -> Pin<Box<HandlerFuture>> {
                 matches.insert(45, rom01); // Romans
                 matches.insert(51, col02); // Colossians
 
-                let resp = PostResponseTest { /*summary: String::from("Message #2 to Rust"),*/ matches };
+                let resp = PostResponseTest {
+                    matches,
+                    summary: String::from("Message from Rust"),
+                };
                 let bytes = rmp_serde::to_vec(&resp).unwrap();
 
                 let mime = String::from("application/binary");
