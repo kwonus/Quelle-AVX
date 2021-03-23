@@ -25,11 +25,30 @@ use serde::{Deserialize, Serialize};
 use rmps::{Deserializer, Serializer};
 use gotham::start;
 use gotham::hyper::body::Buf;
+use mime::Mime;
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Searches {
+struct PostRequestTest {
     x: u32,
     y: i32,
+    message: String,
+}
+#[derive(Serialize, Deserialize, Debug)]
+struct PostResponseTest {
+    pub matches: HashMap<u8,HashMap<u8,HashMap<u8,HashMap<u8,u64>>>>,
+//    pub summary: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SearchRequestBrief {
+    pub clauses: Vec<String>,
+    pub controls: HashMap<String,String>,
+    pub count: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Responses {
+//  request: SearchRequestBrief,
     message: String,
 }
 
@@ -94,16 +113,87 @@ fn post_status_handler(mut state: State) -> Pin<Box<HandlerFuture>> {
     f.boxed()
 }
 /// Extracts the elements of the POST request and prints them
+fn post_test_handler(mut state: State) -> Pin<Box<HandlerFuture>> {
+    print_request_elements(&state);
+    let f = body::to_bytes(Body::take_from(&mut state)).then(|full_body| {
+        match full_body {
+            Ok(valid_body) => {
+                let mut req: PostRequestTest = rmp_serde::from_read_ref(valid_body.bytes()).unwrap();
+                println!("x = {}; y = {}; message = {}", req.x, req.y, req.message);
+
+                let mut matches: HashMap<u8,HashMap<u8,HashMap<u8,HashMap<u8,u64>>>> = HashMap::new();
+
+
+                let mut act17: HashMap<u8,HashMap<u8,HashMap<u8,u64>>> = HashMap::new();    // Acts 17
+                let mut rom01: HashMap<u8,HashMap<u8,HashMap<u8,u64>>> = HashMap::new();    // Romans 1
+                let mut col02: HashMap<u8,HashMap<u8,HashMap<u8,u64>>> = HashMap::new();    // Colossians 2
+
+                let mut act1729: HashMap<u8,HashMap<u8,u64>> = HashMap::new();  // Acts 17:29
+                let mut rom0120: HashMap<u8,HashMap<u8,u64>> = HashMap::new();  // Romans 1:20
+                let mut col0209: HashMap<u8,HashMap<u8,u64>> = HashMap::new();  // Colossians 2:9
+
+                let mut v1729: HashMap<u8,u64> = HashMap::new();    // Acts 17:29
+                let mut v0120: HashMap<u8,u64> = HashMap::new();    // Romans 1:20
+                let mut v0209: HashMap<u8,u64> = HashMap::new();    // Colossians 2:9
+
+                v1729.insert(17, 1);
+                v0120.insert(29, 1);
+                v0209.insert(10, 1);
+
+                act1729.insert(29, v1729);
+                rom0120.insert(20, v0120);
+                col0209.insert( 9, v0209);
+
+                act17.insert(17, act1729);
+                rom01.insert( 1, rom0120);
+                col02.insert( 2, col0209);
+
+                matches.insert(44, act17); // Actss
+                matches.insert(45, rom01); // Romans
+                matches.insert(51, col02); // Colossians
+
+                let resp = PostResponseTest { /*summary: String::from("Message #2 to Rust"),*/ matches };
+                let bytes = rmp_serde::to_vec(&resp).unwrap();
+
+                let mime = String::from("application/binary");
+                let res = create_response(&state, StatusCode::OK, mime.parse().unwrap(), bytes);
+
+                future::ok((state, res))
+            }
+            Err(e) => future::err((state, e.into())),
+        }
+    });
+
+    f.boxed()
+}
+
+/// Extracts the elements of the POST request and prints them
 fn post_search_handler(mut state: State) -> Pin<Box<HandlerFuture>> {
     print_request_elements(&state);
-    let f = body::to_bytes(Body::take_from(&mut state)).then(|full_body| match full_body {
-        Ok(valid_body) => {
-            let deserializedPoint: Searches = rmp_serde::from_read_ref(valid_body.bytes()).unwrap();
-            println!("x = {}; y = {}; message = {}", deserializedPoint.x, deserializedPoint.y, deserializedPoint.message);
-            let res = create_empty_response(&state, StatusCode::OK);
-            future::ok((state, res))
+    let f = body::to_bytes(Body::take_from(&mut state)).then(|full_body| {
+        match full_body {
+            Ok(valid_body) => {
+                let mut req: SearchRequestBrief = rmp_serde::from_read_ref(valid_body.bytes()).unwrap();
+                println!("search = {}; span = {}", req.clauses[0], req.controls["span"]);
+
+                let message = String::from("Reconstituted in Rust");
+                let resp = Responses {/* request: req,*/ message: String::from("Message from Rust") };
+                let bytes = rmp_serde::to_vec(&resp).unwrap();
+                /*
+                let mime = {
+                    source: (String::from("application/binary")),
+                    slash: 0,
+                    plus: None,
+                    params: ParamSource::None
+                };
+                let res = create_response(&state, StatusCode::OK, mime, bytes);
+
+                 */
+                let res = create_empty_response(&state, StatusCode::OK);
+                future::ok((state, res))
+            }
+            Err(e) => future::err((state, e.into())),
         }
-        Err(e) => future::err((state, e.into())),
     });
 
     f.boxed()
@@ -126,6 +216,9 @@ fn get_display_handler(state: State) -> (State, Response<Body>) {
 /// Create a `Router`
 fn router() -> Router {
     build_simple_router(|route| {
+        route.associate("/test", |assoc| {
+            assoc.post().to(post_test_handler);
+        });
         route.associate("/status", |assoc| {
             assoc.post().to(post_status_handler);
         });

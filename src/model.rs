@@ -8,8 +8,8 @@ use rmps::{Deserializer, Serializer};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SearchRequest {
-    pub clauses: Vec<QuelleSearchClause>,
-    pub controls: Option<QuelleSearchControls>,
+    pub clauses: Vec<SearchClause>,
+    pub controls: Option<SearchControls>,
     pub count: u64,
 }
 
@@ -35,6 +35,9 @@ pub struct FetchRequest {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FetchResult {
+    pub success: bool,
+    pub errors: Vec<String>,
+    pub warnings: Vec<String>,
     pub cursor: u64,
     pub remainder: u64,
     pub session: String,
@@ -50,8 +53,11 @@ pub struct PageRequest {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PageResult {
+    pub success: bool,
+    pub errors: Vec<String>,
+    pub warnings: Vec<String>,
     pub result: String,
-    pub request: Option<QuellePageRequest>,
+    pub request: Option<PageRequest>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -59,12 +65,12 @@ pub struct SearchControls {
     pub domain: String,
     pub span: i32,
     pub strict: i32,
+    pub host: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SearchClause {
-    pub syntax: String,
-    pub fragments: Vec<QuelleSearchFragment>,
+    pub fragments: Vec<SearchFragment>,
     pub segment: String,
     pub polarity: c8,
 }
@@ -72,7 +78,7 @@ pub struct SearchClause {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SearchFragment {
     pub position_aspects: Vec<u32>,
-    pub any_of: Vec<QuelleTokenVector>,
+    pub any_of: Vec<TokenVector>,
     pub text: String,
 }
 
@@ -84,11 +90,11 @@ pub struct TokenFeature {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TokenMatch {
     pub condition: String,
-    pub any_feature: Vec<QuelleTokenFeature>,
+    pub any_feature: Vec<TokenFeature>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TokenVector {
     pub specification: String,
-    pub match_all: Vec<QuelleTokenMatch>,
+    pub match_all: Vec<TokenMatch>,
 }
