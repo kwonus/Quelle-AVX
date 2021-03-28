@@ -8,22 +8,21 @@ use rmps::{Deserializer, Serializer};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SearchRequest {
-    pub clauses: Vec<SearchClause>,
-    pub controls: Option<SearchControls>,
+    pub clauses: Vec<String>,
+    pub controls: Option<QuelleCloudControls>,
     pub count: u64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SearchResult {
-    pub success: bool,
-    pub errors: Vec<String>,
-    pub warnings: Vec<String>,
-    pub cursor: u64,
-    pub remainder: u64,
     pub session: String,
-    pub records: HashMap<u64, String>,
+    pub records: HashMap<u8,HashMap<u8,HashMap<u8,HashMap<u8,u64>>>>,
+    pub abstracts: HashMap<u32, String>,   // AVX extension to Quelle
+    pub cursor: u64,
+    pub count: u64,
+    pub remainder: u64,
     pub summary: String,
-    pub enrichedRequest: Option<SearchRequest>,
+    pub messages: HashMap<String, String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -35,13 +34,12 @@ pub struct FetchRequest {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FetchResult {
-    pub success: bool,
-    pub errors: Vec<String>,
-    pub warnings: Vec<String>,
-    pub cursor: u64,
-    pub remainder: u64,
     pub session: String,
-    pub records: HashMap<u64, String>,
+    pub abstracts: HashMap<u32, String>,
+    pub cursor: u64,
+    pub count: u64,
+    pub remainder: u64,
+    pub messages: HashMap<String, String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -57,14 +55,13 @@ pub struct PageResult {
     pub errors: Vec<String>,
     pub warnings: Vec<String>,
     pub result: String,
-    pub request: Option<PageRequest>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct SearchControls {
+pub struct QuelleCloudControls {
     pub domain: String,
     pub span: i32,
-    pub strict: i32,
+    pub exact: bool,
     pub host: String,
 }
 

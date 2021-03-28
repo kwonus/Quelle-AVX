@@ -60,6 +60,7 @@ struct PostResponseTest {
 pub struct SearchRequestBrief {
     pub clauses: Vec<String>,
     pub controls: HashMap<String,String>,
+    pub cursor: u64,
     pub count: u64,
 }
 
@@ -67,7 +68,11 @@ pub struct SearchRequestBrief {
 struct SearchResponse {
     pub matches: HashMap<u8,HashMap<u8,HashMap<u8,HashMap<u8,u64>>>>,
     pub abstracts: HashMap<u32, String>,   // AVX extension to Quelle
-    pub message: String,
+    pub cursor: u64,
+    pub count: u64,
+    pub remainder: u64,
+    pub summary: String,
+    pub messages: HashMap<String, String>,
 }
 
 const QUELLE_DISPLAY: &str = "Hello Display! (from Quelle)";
@@ -296,7 +301,9 @@ fn post_search_handler(mut state: State) -> Pin<Box<HandlerFuture>> {
                 let resp = SearchResponse {
                     matches,
                     abstracts,
-                    message: String::from("Hello from Rust!"),
+                    summary: String::from("Hello from Rust!"),
+                    count: 3,
+                    remainder: 0,
                 };
                 let bytes = search_result_into_bytes(&resp, msgpack);
 
