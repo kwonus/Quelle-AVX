@@ -1,3 +1,5 @@
+mod model;
+
 use futures::prelude::*;
 use gotham::hyper::{body, HeaderMap, Method, Uri, Version};
 use std::pin::Pin;
@@ -36,6 +38,8 @@ use gotham::hyper::HeaderMap as hmap;
 use gotham::hyper::header::CONTENT_TYPE;
 use std::any::Any;
 use std::borrow::Borrow;
+use crate::model::SearchRequest;
+use crate::model::SearchResponse;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct PostRequestTest {
@@ -54,25 +58,6 @@ struct ZPostRequestTest {
 struct PostResponseTest {
     pub matches: HashMap<u8,HashMap<u8,HashMap<u8,HashMap<u8,u64>>>>,
     pub abstracts: HashMap<u32, String>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct SearchRequestBrief {
-    pub clauses: Vec<String>,
-    pub controls: HashMap<String,String>,
-    pub cursor: u64,
-    pub count: u64,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct SearchResponse {
-    pub matches: HashMap<u8,HashMap<u8,HashMap<u8,HashMap<u8,u64>>>>,
-    pub abstracts: HashMap<u32, String>,   // AVX extension to Quelle
-    pub cursor: u64,
-    pub count: u64,
-    pub remainder: u64,
-    pub summary: String,
-    pub messages: HashMap<String, String>,
 }
 
 const QUELLE_DISPLAY: &str = "Hello Display! (from Quelle)";
@@ -164,16 +149,18 @@ fn test_result_into_bytes(resp: &PostResponseTest, msgpack: bool) -> Vec<u8> {
         test_result_into_json(&resp)
     }
 }
-fn search_request_from_rmp(bytes: Vec<u8>) -> SearchRequestBrief {
-    let mut req: SearchRequestBrief = rmp_serde::from_read_ref(&bytes).unwrap();
+fn search_request_from_rmp(bytes: Vec<u8>) -> SearchRequest {
+    let mut req: SearchRequest = rmp_serde::from_read_ref(&bytes).unwrap();
     return req;
 }
-fn search_request_from_json(bytes: Vec<u8>) -> SearchRequestBrief {
+fn search_request_from_json(bytes: Vec<u8>) -> SearchRequest {
     let asstr = std::str::from_utf8(&bytes).unwrap();
-    let mut req: SearchRequestBrief = serde_json::from_str(asstr).unwrap();
+
+    println!("Listening for requests at http://{}", &asstr);
+    let mut req: SearchRequest = serde_json::from_str(asstr).unwrap();
     return req;
 }
-fn search_request_from_bytes(req: Vec<u8>, msgpack: bool) -> SearchRequestBrief {
+fn search_request_from_bytes(req: Vec<u8>, msgpack: bool) -> SearchRequest {
     if msgpack {
         return search_request_from_rmp(req);
     } else {
@@ -292,7 +279,7 @@ fn post_search_handler(mut state: State) -> Pin<Box<HandlerFuture>> {
                 let mime = get_mimetype_from_header(headers);
 
                 let msgpack = "application/msgpack".eq_ignore_ascii_case(&mime);
-                let mut req: SearchRequestBrief = search_request_from_bytes(valid_body.bytes().to_vec(), msgpack);
+                let mut req = search_request_from_bytes(valid_body.bytes().to_vec(), msgpack);
                 //println!("x = {}; y = {}; message = {}", req.x, req.y, req.message);
 
                 let matches = simulate_search_into_matches();
@@ -303,7 +290,9 @@ fn post_search_handler(mut state: State) -> Pin<Box<HandlerFuture>> {
                     abstracts,
                     summary: String::from("Hello from Rust!"),
                     count: 3,
+                    cursor: 3,
                     remainder: 0,
+                    messages: HashMap::new(),
                 };
                 let bytes = search_result_into_bytes(&resp, msgpack);
 

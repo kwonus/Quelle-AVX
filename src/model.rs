@@ -1,28 +1,29 @@
 extern crate serde;
-#[macro_use]
-extern crate rmp_serde as rmps;
+extern crate serde_json;
+use serde_json::json;
+use serde_json::Result;
 
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
-use rmps::{Deserializer, Serializer};
+use rmp_serde::{Deserializer, Serializer};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SearchRequest {
-    pub clauses: Vec<String>,
+    pub clauses: Vec<SearchClause>,
     pub controls: Option<QuelleCloudControls>,
     pub count: u64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SearchResult {
-    pub session: String,
-    pub records: HashMap<u8,HashMap<u8,HashMap<u8,HashMap<u8,u64>>>>,
+    pub session: Vec<u8>,
     pub abstracts: HashMap<u32, String>,   // AVX extension to Quelle
     pub cursor: u64,
     pub count: u64,
     pub remainder: u64,
-    pub summary: String,
     pub messages: HashMap<String, String>,
+    pub summary: String,
+    pub records: HashMap<u8,HashMap<u8,HashMap<u8,HashMap<u8,u64>>>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -51,10 +52,8 @@ pub struct PageRequest {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PageResult {
-    pub success: bool,
-    pub errors: Vec<String>,
-    pub warnings: Vec<String>,
     pub result: String,
+    pub messages: HashMap<String, String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -67,9 +66,9 @@ pub struct QuelleCloudControls {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SearchClause {
-    pub fragments: Vec<SearchFragment>,
+    pub fragments: Vec<String>,  // SearchFragment(s)
     pub segment: String,
-    pub polarity: c8,
+    pub polarity: i8,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

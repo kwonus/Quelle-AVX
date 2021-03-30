@@ -16,18 +16,6 @@ rmp = "^0.8"
 rmp-serde = "0.15.4"
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
 
-#[dependencies.nng-sys]
-#version = "1.1.1-rc.2"
-#default-features = false # do not include the default features
-# cherry-pick individual features
-#features = ["secure-password", "civet"]
-#nng = { version = "0.5.1", default-features = false, CMAKE_LIBRARY_PATH = "/Users/kevin/CMake/Release" }
-
 [[bin]]
-name = "unused"
+name = "Quelle-AVX"
 path = "src/main.rs"
-
-#[lib]
-#crate-type = ["cdylib"]
-#name = "QuelleSearchLib"
-#path = "src/QuelleLib.rs"
