@@ -39,7 +39,8 @@ use gotham::hyper::header::CONTENT_TYPE;
 use std::any::Any;
 use std::borrow::Borrow;
 use crate::model::SearchRequest;
-use crate::model::SearchResponse;
+use crate::model::SearchResult;
+use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct PostRequestTest {
@@ -167,13 +168,16 @@ fn search_request_from_bytes(req: Vec<u8>, msgpack: bool) -> SearchRequest {
         return search_request_from_json(req);
     }
 }
-fn search_result_into_rmp(resp: &SearchResponse) -> Vec<u8> {
+fn search_request_into_rmp(req: &SearchRequest) -> Vec<u8> {
+    return rmp_serde::to_vec(&req).unwrap();
+}
+fn search_result_into_rmp(resp: &SearchResult) -> Vec<u8> {
     return rmp_serde::to_vec(&resp).unwrap();
 }
-fn search_result_into_json(resp: &SearchResponse) -> Vec<u8> {
+fn search_result_into_json(resp: &SearchResult) -> Vec<u8> {
     serde_json::to_vec(&resp).unwrap()
 }
-fn search_result_into_bytes(resp: &SearchResponse, msgpack: bool) -> Vec<u8> {
+fn search_result_into_bytes(resp: &SearchResult, msgpack: bool) -> Vec<u8> {
     if msgpack {
         search_result_into_rmp(&resp)
     } else {
@@ -280,19 +284,22 @@ fn post_search_handler(mut state: State) -> Pin<Box<HandlerFuture>> {
 
                 let msgpack = "application/msgpack".eq_ignore_ascii_case(&mime);
                 let mut req = search_request_from_bytes(valid_body.bytes().to_vec(), msgpack);
-                //println!("x = {}; y = {}; message = {}", req.x, req.y, req.message);
+                let rmp = search_request_into_rmp(&req);
 
                 let matches = simulate_search_into_matches();
                 let abstracts = simulate_search_into_abstracts();
 
-                let resp = SearchResponse {
-                    matches,
+                let session = Uuid::new_v3(&Uuid::NAMESPACE_URL, &rmp);
+
+                let resp = SearchResult {
+                    session: *session.as_bytes(),
                     abstracts,
                     summary: String::from("Hello from Rust!"),
                     count: 3,
                     cursor: 3,
                     remainder: 0,
                     messages: HashMap::new(),
+                    records: simulate_search_into_matches(),
                 };
                 let bytes = search_result_into_bytes(&resp, msgpack);
 
