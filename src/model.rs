@@ -16,7 +16,7 @@ pub struct SearchRequest {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SearchResult {
-    pub session: [u8; 16],
+    pub session: String,
     pub abstracts: HashMap<u32, String>,   // AVX extension to Quelle
     pub cursor: u64,
     pub count: u64,

@@ -290,9 +290,10 @@ fn post_search_handler(mut state: State) -> Pin<Box<HandlerFuture>> {
                 let abstracts = simulate_search_into_abstracts();
 
                 let session = Uuid::new_v3(&Uuid::NAMESPACE_URL, &rmp);
+                let usession = session.as_u128();
 
                 let resp = SearchResult {
-                    session: *session.as_bytes(),
+                    session: format!("{:X}", usession),
                     abstracts,
                     summary: String::from("Hello from Rust!"),
                     count: 3,
